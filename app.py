@@ -1,36 +1,56 @@
 import streamlit as st
 from ensemble_stack_v3 import final_prediction_pipeline
-from utils import preprocess_input
-from visualizer import plot_confidences
+from drift_monitor import calculate_accuracy_per_position
 
-st.set_page_config(layout="centered", page_title="Prediksi Angka 4D - Ultimate SOTA")
+st.set_page_config(page_title="Prediksi 4D - SOTA Max", layout="centered")
+st.title("🔮 Prediksi Angka 4D - SOTA Max Upgrade")
 
-st.title("🔮 Prediksi Angka 4D - Meta + Pattern Aware")
-st.markdown("Masukkan angka 4D tanpa tanggal. Contoh:\n\n```\n1234\n4567\n8901\n...```")
+st.markdown("Masukkan data historis angka 4D (tanpa tanggal), satu per baris:")
+st.code("1234\n4520\n0987")
 
-text_input = st.text_area("📥 Input Data Historis 4D", height=300)
+# Input TextArea
+raw_input = st.text_area("Data Historis 4D", height=300)
+data = []
 
-if text_input:
-    data = preprocess_input(text_input)
-    if len(data) < 50:
-        st.warning("Minimal 50 angka 4D diperlukan.")
-    else:
-        with st.spinner("🔁 Memproses dengan ensemble + meta-learning..."):
-            hasil = final_prediction_pipeline(data)
+# Validasi Input
+if raw_input:
+    try:
+        for line in raw_input.strip().split("\n"):
+            line = line.strip()
+            assert len(line) == 4
+            digits = [int(ch) for ch in line]
+            assert all(0 <= d <= 9 for d in digits)
+            data.append(digits)
+    except:
+        st.error("⚠️ Format salah. Harus 4 digit angka per baris, contoh: 1234")
 
-        top3 = hasil["top3_per_posisi"]
-        confs = hasil["confidences"]
-        kombinasi = hasil["top10_kombinasi"]
+# Proses Prediksi
+if len(data) >= 20:
+    with st.spinner("🚀 Memproses prediksi dengan ensemble SOTA..."):
+        result = final_prediction_pipeline(data)
+        predictions = result["top3_per_posisi"]
+        confidences = result["confidences"]
+        top10_kombinasi = result["top10_kombinasi"]
 
-        posisi = ['Ribuan', 'Ratusan', 'Puluhan', 'Satuan']
-        st.subheader("🎯 Prediksi Top-3 per Posisi (Meta-Voting)")
-        for i, pos in enumerate(posisi):
-            st.markdown(f"**{pos}**:")
-            for j in range(3):
-                st.write(f"{j+1}. Angka: {top3[i][j]} | Confidence: {confs[i][j]:.2%}")
+    st.success("✅ Prediksi berhasil dihitung.")
 
-        plot_confidences(confs)
+    # Tampilkan Hasil Per Posisi
+    st.subheader("📊 Top-3 Digit per Posisi")
+    posisi = ["Ribuan", "Ratusan", "Puluhan", "Satuan"]
+    for i in range(4):
+        top3 = predictions[i]
+        conf = ["{:.2f}".format(c) for c in confidences[i]]
+        st.write(f"**{posisi[i]}** → {top3} (Conf: {conf})")
 
-        st.subheader("💡 Kombinasi 4D Terbaik Berdasarkan Pola")
-        for comb, score in kombinasi:
-            st.write(f"**{''.join(map(str, comb))}** | Skor Pola: {score}")
+    # Kombinasi Final
+    st.subheader("🔢 Top-10 Kombinasi 4D Terbaik")
+    for i, komb in enumerate(top10_kombinasi, 1):
+        st.write(f"{i}. {' '.join(map(str, komb))}")
+
+    # Live Accuracy
+    st.subheader("📈 Akurasi Real-Time per Posisi")
+    acc = calculate_accuracy_per_position()
+    for i in range(4):
+        st.write(f"{posisi[i]}: **{acc.get(i, 0)}%**")
+else:
+    st.info("ℹ️ Masukkan minimal 20 baris data historis 4D untuk menjalankan prediksi.")
