@@ -51,10 +51,10 @@ def full_prediction_pipeline(data):
         trf.fit(X, y, epochs=5, verbose=0)
 
         last_input = X[-1].reshape(1, ws, 1)
-        pred_lstm = lstm.predict(last_input)[0]
-        pred_trf = trf.predict(last_input)[0]
+        pred_lstm = lstm.predict(last_input, verbose=0)[0]
+        pred_trf = trf.predict(last_input, verbose=0)[0]
 
-        # Kalibrasi
+        # Ensemble dan kalibrasi
         combined = (pred_lstm + pred_trf) / 2
         combined /= combined.sum()
 
@@ -64,12 +64,7 @@ def full_prediction_pipeline(data):
         result_preds.append(top3_idx.tolist())
         result_confs.append(top3_conf.tolist())
 
-    return result_preds, result_confs        X = X.reshape((X.shape[0], X.shape[1], 1))
-
-        lstm = build_lstm_block((ws,1))
-        transformer = build_transformer_block((ws,1))
-
-        lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+    return result_preds, result_confs        lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
         transformer.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
         lstm.fit(X, y, epochs=5, verbose=0)
