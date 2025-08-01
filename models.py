@@ -1,0 +1,59 @@
+import numpy as np
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, LSTM, LayerNormalization, MultiHeadAttention, Dropout, GlobalAveragePooling1D, Concatenate
+
+def window_data(data, pos, window_size=20):
+    X, y = [], []
+    for i in range(len(data) - window_size):
+        seq = [d[pos] for d in data[i:i+window_size]]
+        target = data[i+window_size][pos]
+        X.append(seq)
+        y.append(target)
+    return np.array(X), np.array(y)
+
+def build_lstm_block(input_shape):
+    inputs = Input(shape=input_shape)
+    x = LSTM(64, return_sequences=True)(inputs)
+    x = LSTM(32)(x)
+    out = Dense(10, activation='softmax')(x)
+    return Model(inputs, out, name="LSTM_Block")
+
+def build_transformer_block(input_shape):
+    inputs = Input(shape=input_shape)
+    x = LayerNormalization()(inputs)
+    x = MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
+    x = Dropout(0.1)(x)
+    x = GlobalAveragePooling1D()(x)
+    x = Dense(32, activation='relu')(x)
+    out = Dense(10, activation='softmax')(x)
+    return Model(inputs, out, name="Transformer_Block")
+
+def full_prediction_pipeline(data):
+    ws = 20
+    result_preds = []
+    result_confs = []
+    for pos in range(4):
+        X, y = window_data(data, pos, ws)
+        X = X.reshape((X.shape[0], X.shape[1], 1))
+
+        lstm = build_lstm_block((ws,1))
+        transformer = build_transformer_block((ws,1))
+
+        lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+        transformer.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+
+        lstm.fit(X, y, epochs=5, verbose=0)
+        transformer.fit(X, y, epochs=5, verbose=0)
+
+        last_input = X[-1].reshape(1, ws, 1)
+        pred_lstm = lstm.predict(last_input)[0]
+        pred_trf = transformer.predict(last_input)[0]
+
+        combined_pred = (pred_lstm + pred_trf) / 2
+        top3_idx = np.argsort(combined_pred)[-3:][::-1]
+        top3_conf = combined_pred[top3_idx]
+
+        result_preds.append(top3_idx.tolist())
+        result_confs.append(top3_conf.tolist())
+
+    return result_preds, result_confs
