@@ -5,37 +5,31 @@ from visualizer import plot_confidences, plot_top_combinations
 import pandas as pd
 
 st.set_page_config(page_title="Prediksi Angka 4D SOTA", layout="wide")
-st.title("🔢 Prediksi Angka 4D - SOTA Max Upgrade")
+st.title("🧠 Prediksi Angka 4D - Full Keras Mode")
 
-# Input data
-st.markdown("### Masukkan Data Historis 4D (tanpa tanggal, hanya 4 digit per baris):")
-manual_input = st.text_area("Contoh:\n1234\n4567\n6789", height=200)
+st.markdown("### Masukkan Data Historis 4D (contoh format 1234 per baris):")
+manual_input = st.text_area("Input Data Manual:", height=200)
 
-if st.button("🔍 Prediksi Sekarang") and manual_input.strip():
+if st.button("🚀 Jalankan Prediksi"):
     try:
         data = parse_manual_input(manual_input)
         hasil = final_prediction_pipeline(data)
     except Exception as e:
-        st.error(f"❌ Gagal menjalankan pipeline: {e}")
+        st.error(f"❌ Gagal memproses: {e}")
         st.stop()
 
-    st.success("✅ Prediksi berhasil diproses!")
+    st.success("✅ Prediksi sukses dengan model keras!")
 
-    # Tampilkan hasil per posisi digit
-    st.markdown("### 🎯 Top-3 Prediksi per Posisi:")
     posisi_label = ["Ribuan", "Ratusan", "Puluhan", "Satuan"]
+    st.markdown("### 🎯 Top-3 Prediksi per Posisi:")
     for i in range(4):
-        st.markdown(f"**{posisi_label[i]}:**")
-        top3 = hasil["top3_per_posisi"][i]
-        confs = hasil["confidences"][i]
-        plot_confidences(top3, confs, key=f"conf_{i}")
+        st.markdown(f"**{posisi_label[i]}**")
+        plot_confidences(hasil["top3_per_posisi"][i], hasil["confidences"][i], key=f"keras_{i}")
 
-    # Tampilkan kombinasi 4D
     st.markdown("### 💡 Top-10 Kombinasi 4D Potensial:")
     df_top = pd.DataFrame(hasil["top10_kombinasi"], columns=["Angka 4D", "Skor"])
     st.dataframe(df_top, use_container_width=True)
     plot_top_combinations(df_top)
 
-# Footer
 st.markdown("---")
-st.caption("🧠 Engine: Meta-LSTM + Transformer + Markov + Pola + Kalibrasi + Skoring + Logging")
+st.caption("🔁 Mode Keras Stabil: LSTM + Transformer (epochs rendah, clear session aktif)")
