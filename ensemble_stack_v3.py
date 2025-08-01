@@ -10,14 +10,21 @@ from confidence_calibrator import temperature_scale
 from combination_scorer import score_combinations
 from drift_monitor import log_prediction
 
-def simulate_model_accuracy(X, y, model, last_input):
-    K.clear_session()  # ✅ Hindari error internal Keras
-    model.fit(X, y, epochs=3, verbose=0)
-    preds = model.predict(X, verbose=0)
-    top3_hits = sum(y[i] in np.argsort(preds[i])[-3:] for i in range(len(y)))
-    last_pred = model.predict(last_input, verbose=0)[0]
-    return top3_hits / len(y), last_pred
+import tensorflow.keras.backend as K
 
+def simulate_model_accuracy(X, y, model, last_input):
+    K.clear_session()
+    try:
+        model.fit(X, y, epochs=2, verbose=0)
+        preds = model.predict(X, verbose=0)
+        top3_hits = sum(y[i] in np.argsort(preds[i])[-3:] for i in range(len(y)))
+        last_pred = model.predict(last_input, verbose=0)[0]
+        return top3_hits / len(y), last_pred
+    except Exception as e:
+        print(f"[ERROR keras training]: {e}")
+        dummy = np.ones(10) / 10
+        return 0.0, dummy
+        
 def final_prediction_pipeline(data):
     result_preds = []
     result_confs = []
