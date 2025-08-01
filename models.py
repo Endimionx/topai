@@ -21,7 +21,8 @@ def build_lstm_block(input_shape):
 
 def build_transformer_block(input_shape):
     inputs = Input(shape=input_shape, name="trf_input")
-    x = LayerNormalization()(inputs)
+    x = Dense(16)(inputs)  # ubah dimensi menjadi key_dim-compatible
+    x = LayerNormalization()(x)
     x = MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
     x = Dropout(0.1)(x)
     x = GlobalAveragePooling1D()(x)
