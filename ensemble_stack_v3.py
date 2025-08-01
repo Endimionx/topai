@@ -4,6 +4,7 @@ from markov_model import top6_markov_hybrid
 from automl import find_optimal_window
 from meta_learner import MetaLearner
 from pattern_filter import filter_top_combinations
+from pattern_digit import compute_pattern_score
 
 def simulate_model_accuracy(X, y, model, last_input):
     model.fit(X, y, epochs=3, verbose=0)
@@ -20,6 +21,7 @@ def final_prediction_pipeline(data):
     for pos in range(4):
         ws = find_optimal_window(data, pos, (10, 30))
         X, y = window_data(data, pos, ws)
+        y = y.astype(np.int32)
         if len(X) < 5:
             raise ValueError(f"Data terlalu sedikit untuk posisi {pos}")
         X = X.reshape((X.shape[0], X.shape[1], 1))
@@ -36,18 +38,21 @@ def final_prediction_pipeline(data):
         _, pred_markov = top6_markov_hybrid(data, pos)
         pred_markov = pred_markov / pred_markov.sum()
 
-        # Meta input = concatenated pred vectors
-        meta_input = np.concatenate([pred_lstm, pred_trf, pred_markov])
+        # ✅ Tambah skor pola per-digit
+        skor_pola = compute_pattern_score(data, pos)
+
+        # Gabungkan semua prediksi
+        meta_input = np.concatenate([pred_lstm, pred_trf, pred_markov, skor_pola])
         meta_inputs.append(meta_input)
 
-    # Meta prediction (model should be trained offline for real use)
+    # 🔍 MetaLearner untuk menentukan Top-3 per posisi
     meta = MetaLearner()
     preds, confs = meta.predict_top3(meta_inputs)
 
     result_preds = preds
     result_confs = confs
 
-    # Kombinasi 4D terbaik dari pattern filter
+    # 🔢 Kombinasi 4D terbaik berdasarkan rule/pola
     top10_combinations = filter_top_combinations(result_preds, top_k=10)
 
     return {
