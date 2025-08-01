@@ -13,21 +13,21 @@ def window_data(data, pos, window_size):
     return np.array(X), np.array(y)
 
 def build_lstm_block(input_shape):
-    inputs = Input(shape=input_shape)
+    inputs = Input(shape=input_shape, name="lstm_input")
     x = LSTM(64, return_sequences=True)(inputs)
     x = LSTM(32)(x)
     out = Dense(10, activation='softmax')(x)
-    return Model(inputs, out)
+    return Model(inputs, out, name="LSTM_Model")
 
 def build_transformer_block(input_shape):
-    inputs = Input(shape=input_shape)
+    inputs = Input(shape=input_shape, name="trf_input")
     x = LayerNormalization()(inputs)
     x = MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
     x = Dropout(0.1)(x)
     x = GlobalAveragePooling1D()(x)
     x = Dense(32, activation='relu')(x)
     out = Dense(10, activation='softmax')(x)
-    return Model(inputs, out)
+    return Model(inputs, out, name="Transformer_Model")
 
 def full_prediction_pipeline(data):
     result_preds = []
