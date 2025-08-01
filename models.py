@@ -37,6 +37,7 @@ def full_prediction_pipeline(data):
     for pos in range(4):
         ws = find_optimal_window(data, pos, (10, 30))
         X, y = window_data(data, pos, ws)
+        y = y.astype(np.int32)  # ✅ pastikan y bertipe integer
         if len(X) < 5:
             raise ValueError(f"Data terlalu sedikit untuk posisi {pos}")
         X = X.reshape((X.shape[0], X.shape[1], 1))
