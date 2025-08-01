@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
-from models import full_prediction_pipeline
+from ensemble_stack import final_prediction_pipeline as full_prediction_pipeline
 from utils import preprocess_input, show_prediction_results
 from simulator import simulate_prediction_accuracy
 from visualizer import plot_confidences
 
 st.set_page_config(layout="centered", page_title="Prediksi Angka 4D - SOTA")
 
-st.title("🔢 Prediksi Angka 4D - SOTA Full System")
+st.title("🔢 Prediksi Angka 4D - SOTA Final Hybrid System")
 st.markdown("Masukkan data historis 4D (tanpa tanggal), satu angka per baris. Contoh:\n\n```\n1234\n5678\n9012\n...```")
 
 text_input = st.text_area("Input Data Historis (minimal 50 angka):", height=300)
