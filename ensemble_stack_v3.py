@@ -3,8 +3,11 @@ from models import build_lstm_block, build_transformer_block, window_data
 from markov_model import top6_markov_hybrid
 from automl import find_optimal_window
 from meta_learner import MetaLearner
-from pattern_filter import filter_top_combinations
 from pattern_digit import compute_pattern_score
+from pattern_filter import filter_top_combinations
+from confidence_calibrator import temperature_scale
+from combination_scorer import score_combinations
+from drift_monitor import log_prediction
 
 def simulate_model_accuracy(X, y, model, last_input):
     model.fit(X, y, epochs=3, verbose=0)
@@ -21,15 +24,14 @@ def final_prediction_pipeline(data):
     for pos in range(4):
         ws = find_optimal_window(data, pos, (10, 30))
         X, y = window_data(data, pos, ws)
-        y = y.astype(np.int32)
         if len(X) < 5:
             raise ValueError(f"Data terlalu sedikit untuk posisi {pos}")
         X = X.reshape((X.shape[0], X.shape[1], 1))
         last_input = X[-1].reshape(1, ws, 1)
 
-        # Build & train models
-        lstm = build_lstm_block((ws,1))
-        trf = build_transformer_block((ws,1))
+        # === MODEL TRAINING ===
+        lstm = build_lstm_block((ws, 1))
+        trf = build_transformer_block((ws, 1))
         lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
         trf.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
@@ -38,25 +40,37 @@ def final_prediction_pipeline(data):
         _, pred_markov = top6_markov_hybrid(data, pos)
         pred_markov = pred_markov / pred_markov.sum()
 
-        # ✅ Tambah skor pola per-digit
-        skor_pola = compute_pattern_score(data, pos)
+        # === PATTERN-AWARE SCORING ===
+        pattern_score = compute_pattern_score(data, pos)
+        pred_lstm *= pattern_score
+        pred_trf *= pattern_score
+        pred_markov *= pattern_score
 
-        # Gabungkan semua prediksi
-        meta_input = np.concatenate([pred_lstm, pred_trf, pred_markov, skor_pola])
+        # === CONFIDENCE CALIBRATION ===
+        pred_lstm = temperature_scale(pred_lstm, temperature=1.5)
+        pred_trf = temperature_scale(pred_trf, temperature=1.5)
+        pred_markov = temperature_scale(pred_markov, temperature=1.5)
+
+        # === STACKED INPUT TO META-LEARNER ===
+        meta_input = np.concatenate([pred_lstm, pred_trf, pred_markov])
         meta_inputs.append(meta_input)
 
-    # 🔍 MetaLearner untuk menentukan Top-3 per posisi
+    # === META LEARNER VOTING ===
     meta = MetaLearner()
     preds, confs = meta.predict_top3(meta_inputs)
-
     result_preds = preds
     result_confs = confs
 
-    # 🔢 Kombinasi 4D terbaik berdasarkan rule/pola
-    top10_combinations = filter_top_combinations(result_preds, top_k=10)
+    # === PROBABILISTIC SCORING + FILTER ===
+    kombinasi_skored = score_combinations(result_preds, result_confs, top_k=50)
+    top10_kombinasi = filter_top_combinations(kombinasi_skored, top_k=10)
+
+    # === LOGGING REAL ACCURACY ===
+    for i in range(4):
+        log_prediction(real_digit=data[-1][i], predicted_top3=result_preds[i], position=i)
 
     return {
         "top3_per_posisi": result_preds,
         "confidences": result_confs,
-        "top10_kombinasi": top10_combinations
+        "top10_kombinasi": top10_kombinasi
     }
