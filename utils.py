@@ -14,3 +14,17 @@ def show_prediction_results(predictions, confidences):
         st.markdown(f"**{pos}**:")
         for i in range(3):
             st.write(f"{i+1}. Angka: {top3[i]} | Confidence: {conf[i]:.2%}")
+
+def parse_manual_input(text):
+    """
+    Mengubah teks manual menjadi list angka 4D.
+    Input format: baris per baris, tiap baris 4 digit (contoh: 1234)
+    Output: list of list of int, misalnya [[1,2,3,4], [4,5,6,7]]
+    """
+    lines = text.strip().splitlines()
+    data = []
+    for line in lines:
+        if len(line.strip()) != 4 or not line.strip().isdigit():
+            raise ValueError(f"Format salah: {line}")
+        data.append([int(d) for d in line.strip()])
+    return data
