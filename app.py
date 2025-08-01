@@ -6,11 +6,7 @@ from utils import preprocess_input, show_prediction_results
 st.set_page_config(layout="centered", page_title="Prediksi Angka 4D - SOTA")
 
 st.title("🔢 Prediksi Angka 4D - SOTA Full System")
-st.markdown("Masukkan data historis 4D (tanpa tanggal) di bawah ini. Contoh format:
-
-```
-1234\n2345\n3456
-```")
+st.markdown("Masukkan data historis 4D (tanpa tanggal) di bawah ini. Contoh format:1234\n2345\n3456")
 
 text_input = st.text_area("Input Data Historis (minimal 50 angka):", height=300)
 
