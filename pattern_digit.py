@@ -1,13 +1,6 @@
-import numpy as np
-from collections import defaultdict, Counter
 
-def pola_transisi(data, pos):
-    transisi = defaultdict(int)
-    for i in range(len(data) - 1):
-        now = data[i][pos]
-        next_ = data[i+1][pos]
-        transisi[(now, next_)] += 1
-    return transisi
+import numpy as np
+from collections import Counter
 
 def delay_digit(data, pos):
     delay = [0] * 10
