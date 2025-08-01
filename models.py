@@ -14,8 +14,8 @@ def window_data(data, pos, window_size):
 
 def build_lstm_block(input_shape):
     inputs = Input(shape=input_shape, name="lstm_input")
-    x = LSTM(64, return_sequences=True)(inputs)
-    x = LSTM(32)(x)
+    x = LSTM(32, return_sequences=True)(inputs)
+    x = LSTM(16)(x)
     out = Dense(10, activation='softmax')(x)
     return Model(inputs, out, name="LSTM_Model")
 
@@ -23,10 +23,10 @@ def build_transformer_block(input_shape):
     inputs = Input(shape=input_shape, name="trf_input")
     x = Dense(16)(inputs)  # ubah dimensi menjadi key_dim-compatible
     x = LayerNormalization()(x)
-    x = MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
+    x = MultiHeadAttention(num_heads=1, key_dim=8)(x, x)
     x = Dropout(0.1)(x)
     x = GlobalAveragePooling1D()(x)
-    x = Dense(32, activation='relu')(x)
+    x = Dense(16, activation='relu')(x)
     out = Dense(10, activation='softmax')(x)
     return Model(inputs, out, name="Transformer_Model")
 
@@ -49,8 +49,8 @@ def full_prediction_pipeline(data):
         lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
         trf.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
-        lstm.fit(X, y, epochs=5, verbose=0)
-        trf.fit(X, y, epochs=5, verbose=0)
+        lstm.fit(X, y, epochs=1, verbose=0)
+        trf.fit(X, y, epochs=1, verbose=0)
 
         last_input = X[-1].reshape(1, ws, 1)
         pred_lstm = lstm.predict(last_input, verbose=0)[0]
