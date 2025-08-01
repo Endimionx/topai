@@ -64,21 +64,4 @@ def full_prediction_pipeline(data):
         result_preds.append(top3_idx.tolist())
         result_confs.append(top3_conf.tolist())
 
-    return result_preds, result_confs        lstm.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-        transformer.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-
-        lstm.fit(X, y, epochs=5, verbose=0)
-        transformer.fit(X, y, epochs=5, verbose=0)
-
-        last_input = X[-1].reshape(1, ws, 1)
-        pred_lstm = lstm.predict(last_input)[0]
-        pred_trf = transformer.predict(last_input)[0]
-
-        combined_pred = (pred_lstm + pred_trf) / 2
-        top3_idx = np.argsort(combined_pred)[-3:][::-1]
-        top3_conf = combined_pred[top3_idx]
-
-        result_preds.append(top3_idx.tolist())
-        result_confs.append(top3_conf.tolist())
-
     return result_preds, result_confs
